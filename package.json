@@ -1,5 +1,5 @@
 {
-  "name": "document",
+  "name": "documentation",
   "version": "0.0.1",
   "description": "A personal website that deployed to Vercel with Nextra docs template used for taking notes ",
   "scripts": {
@@ -9,12 +9,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zelingo/document.git"
+    "url": "git+https://github.com/zelingo/documentation.git"
   },
   "author": "zelingo",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zelingo/document/issues"
+    "url": "https://github.com/zelingo/documentation/issues"
   },
   "homepage": "https://www.zelingo.cn/",
   "dependencies": {
