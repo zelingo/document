@@ -1,0 +1,215 @@
+## 使用Context深入传递数据
+
+**使用props传递数据会带来的问题**
+
+*传递props数据是通过UI Tree 显式传递给使用它的组件。但是在传递的组件层级深时（Prop drilling问题），或者有多个组件需要相同数据时 ，使用props会使代码变得冗余。React提供了Context解决这种问题。*
+
+### 替代props的解决方案 Context
+
+import { Steps } from 'nextra/components';
+
+<Steps>
+
+### Step 1  create a Context
+
+```jsx copy
+    export const LevelContext = createContext(1)
+```
+
+```createContext(defaultVal)``` 可以传入任何参数作为默认值
+
+### Step 2  use the Context (子组件使用)
+
+在需要Context数据的组件中导入相应的Context.js
+
+```jsx copy showLineNumbers
+import { LevelContext } from './LevelContext.js;
+
+export default function Heading({children}){
+    const level = useContext(LevelContext);
+
+    //...
+}
+ ```
+
+### Step 3  provide the Context (父组件提供) 
+
+```jsx copy showLineNumbers
+import { LevelContext } from './LevelContext.js';
+
+export default function Section({level, children}){
+    return (
+        <section>
+            <LevelContext.provider value={level}>
+                {children}
+            </LevelContext.provider>
+        </section>
+    )
+}
+```
+Section组件提供了level值，给到那些要使用level的子组件，其下的子孙组件将使用UI tree中最接近的自己的上层组件提供的level。
+ 
+</Steps>
+
+
+
+### 使用和提供来自同一组件的Context
+```jsx copy showLineNumbers
+export default function Section({children}){
+    const level = useContext(LevelContext);
+     return (
+        <section>
+            <LevelContext.provider value={level+1}>
+                {children}
+            </LevelContext.provider>
+        </section>
+    )
+}
+```
+
+ ### 通过中间组件传递Context
+ 可以在提供上下文的组件和使用上下文的组件之间插入任意数量的组件,包括内置组件和自己构建的组件。
+
+import { Tabs } from 'nextra/components'
+
+<Tabs items={['App.js','Section.js','Heading.js','LevelContext.js']}>
+
+<Tabs.Tab>
+
+```js filename="App.js" showLineNumbers
+export default function ProfilePage(){
+    return (
+        <Section>
+            <Heading>My Profile</Heading>
+            <Post
+        title="Hello traveller!"
+        body="Read about my adventures."
+      />
+      <AllPosts />
+        </Section>
+    )
+}
+function AllPosts() {
+  return (
+    <Section>
+      <Heading>Posts</Heading>
+      <RecentPosts />
+    </Section>
+  );
+}
+
+function RecentPosts() {
+  return (
+    <Section>
+      <Heading>Recent Posts</Heading>
+      <Post
+        title="Flavors of Lisbon"
+        body="...those pastéis de nata!"
+      />
+      <Post
+        title="Buenos Aires in the rhythm of tango"
+        body="I loved it!"
+      />
+    </Section>
+  );
+}
+
+function Post({ title, body }) {
+  return (
+    <Section isFancy={true}>
+      <Heading>
+        {title}
+      </Heading>
+      <p><i>{body}</i></p>
+    </Section>
+  );
+}
+
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```js filename="Section.js" showLineNumbers
+import { useContext } from 'react';
+import { LevelContext } from './LevelContext.js';
+
+export default function Section({ children, isFancy }) {
+  const level = useContext(LevelContext);
+  return (
+    <section className={
+      'section ' +
+      (isFancy ? 'fancy' : '')
+    }>
+      <LevelContext.Provider value={level + 1}>
+        {children}
+      </LevelContext.Provider>
+    </section>
+  );
+}
+
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```js filename="Heading.js" showLineNumbers
+import { useContext } from 'react';
+import { LevelContext } from './LevelContext.js';
+
+export default function Heading({ children }) {
+  const level = useContext(LevelContext);
+  switch (level) {
+    case 0:
+      throw Error('Heading must be inside a Section!');
+    case 1:
+      return <h1>{children}</h1>;
+    case 2:
+      return <h2>{children}</h2>;
+    case 3:
+      return <h3>{children}</h3>;
+    case 4:
+      return <h4>{children}</h4>;
+    case 5:
+      return <h5>{children}</h5>;
+    case 6:
+      return <h6>{children}</h6>;
+    default:
+      throw Error('Unknown level: ' + level);
+  }
+}
+
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```js filename="LevelContext.js" showLineNumbers
+import { createContext } from 'react';
+
+export const LevelContext = createContext(0);
+```
+
+</Tabs.Tab>
+
+</Tabs>
+
+
+### 使用Context的用例
+在使用Context之前，先观察是否可以使用props、或者将JSX作为children传递。
+
+ **1. Theme**
+
+如果应用允许用户更改其外观（例如深色模式），可以将Context Provider放在应用的顶部，并在需要调整其视觉外观的组件中使用该Context
+
+**2.Current Account**
+
+许多组件可能需要知道当前登录的用户。将其放在Context中可以方便地在树中的任何位置阅读它。某些应用程序还会允许同时操作多个帐户（例如，以其他用户身份发表评论）。在这些情况下，将 UI 的一部分包装到具有不同当前帐户值的嵌套Context Provider中会很方便。
+
+**3.Route**
+
+大多数路由解决方案在内部使用Context来保存当前路由。这就是每个Link“知道”它是否处于活动状态的方式。如果要构建自己的路由器，可能也想这样做。
+
+**4.Manage State**
+
+随着应用的增长，可能会得到很多更接近应用顶部的状态。下面的许多远程组件可能想要更改它。通常将Reducer与Context一起使用来管理复杂状态并将其传递给远程组件，而不会有太多麻烦。
