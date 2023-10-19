@@ -1,0 +1,129 @@
+## useState Hook
+**1️⃣ 如何批量处理state?**
+
+React会在处理完所有的Event handles后，处理 set state，进入下一次渲染；
+如果需要对同一个state进行多次更新，可以传递一个函数
+```jsx copy
+setNumber(n =>  n+1);
+setNumber(n =>  n+1);
+setNumber(n =>  n+1);  // 执行三次，下一次渲染 number+3
+
+setNumber(n+1);
+setNumber(n+1);
+setNumber(n+1); // 执行三次，下一次渲染 number +1
+```
+
+**2️⃣ 避免状态重复**
+
+如果对象A指向对象B中的某一项，不要重复创建。
+（比如选中项selectedItem，要创建selectedId或者索引状态）
+
+**3️⃣** **避免创建深层嵌套状态**
+
+ 如果是深层嵌套tree结构，转化为Flat结构（normalized），方便操作。
+
+简单嵌套对象的更新，可以使用**```use-immer```**，代码简洁，可读性高。
+```jsx copy
+import { useImmer } from 'use-immer';
+
+export default function Form() {
+  const [person, updatePerson] = useImmer({
+    name: 'Niki de Saint Phalle',
+    artwork: {
+      title: 'Blue Nana',
+      city: 'Hamburg',
+      image: 'https://i.imgur.com/Sd1AgUOm.jpg',
+    }
+  });
+
+  function handleNameChange(e) {
+    updatePerson(draft => {
+      draft.name = e.target.value;
+    });
+  }
+
+  function handleTitleChange(e) {
+    updatePerson(draft => {
+      draft.artwork.title = e.target.value;
+    });
+  }
+
+  return (
+    <>
+      <label>
+        Name:
+        <input
+          value={person.name}
+          onChange={handleNameChange}
+        />
+      </label>
+    </>
+  );
+}
+```
+
+*Immer*提供了一个安全可变异的特殊draft对象，Immer会对更改后的draft创建状态副本，所以可以直接修改参数draft。
+
+> **受控组件/非受控组件**
+将具有本地状态的组件称为非受控组件；当组件中的信息由props而不是它自己本地状态驱动时，称为受控组件；
+
+
+**4️⃣** **保留状态与重置状态⭐**
+
+组件之间隔离状态，React根据在UI Tree的位置跟踪状态属于哪个组件，可以控制保留状态或者组件重渲染时重置状态。
+![image.png](https://upload-images.jianshu.io/upload_images/19357622-8d62d04b09e68a00.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+React根据JSX创建UI Tree，React DOM更新浏览器DOM元素匹配UI Tree。
+状态state是react内部持有的，依据组件在UI Tree中的位置，react将每个状态与对应组件关联。
+
+**①** **如果组件（或者相同组件）在同一位置重新渲染，状态state会保留。**
+
+当组件删除重渲染后，组件及其内部状态从头开始初始化，添加到DOM上。
+
+**②** **不应嵌套组件函数定义的原因：组件重新渲染时，每次都会创建不同的函数，相当于在同一位置渲染不同组件，所以函数组件MyTextField中的状态都会被重置。**
+
+```jsx copy
+export default function MyComponent() {
+  const [counter, setCounter] = useState(0);
+
+  function MyTextField() {
+    const [text, setText] = useState('');
+    return (
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+      />
+    );
+  }
+
+  return (
+    <>
+      <MyTextField />
+      <button onClick={() => {
+        setCounter(counter + 1)
+      }}>Clicked {counter} times</button>
+    </>
+  );
+}
+```
+**③** **在同一位置组件重置状态的方法**
+
+第一种：在不同位置渲染组件。(三目运算符相当于同一位置)
+```jsx copy
+ <div>
+      {isPlayerA && <Counter person="Taylor" />}
+      {!isPlayerA && <Counter person="Sarah" />}
+</div>
+```
+第二种：**为每个组件提供一个显式标识key。⭐**
+
+默认情况下，React会根据UI Tree中的位置辨别组件。添加key，可以告诉React这是个特别标识组件，无论出现在哪，React都会认出它。即使你在同一位置渲染它们，React也会视为不同组件。
+
+（*key不是全局唯一的，仅是指定父项中的位置*）
+
+**④** **保留已删除组件的状态的方法**
+
+第一种：提升状态，在父组件中设置状态
+
+第二种：使用其他源，（比如用户意外关闭页面，保留邮件草稿，可以让组件通过读取localstorage来初始化其状态，并将草稿保存在那里）
+

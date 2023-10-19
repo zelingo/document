@@ -1,15 +1,19 @@
 {
-  "index": "Introduction",
-  "another": "Another Page",
-  "advanced": "Advanced (A Folder)",
-  "about": {
-    "title": "About",
-    "type": "page"
+  "index": {
+    "title":"Home",
+    "type":"page"
   },
-  "contact": {
-    "title": "Contact ↗",
-    "type": "page",
-    "href": "https://twitter.com/shuding_",
-    "newWindow": true
+  "react":{
+    "title":"React",
+    "type":"page",
+    "theme":{
+      "breadcrumb": "false",
+      "layout": "full",
+      "typesetting": "article"
+    }
+  },
+  "about":{
+    "title":"About",
+    "type":"page"
   }
 }

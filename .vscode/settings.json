@@ -1,0 +1,26 @@
+{
+    "zenMode.fullScreen": false,
+    "zenMode.hideActivityBar": false,
+    "zenMode.hideLineNumbers": false,
+    "zenMode.hideStatusBar": false,
+    "zenMode.hideTabs": false,
+    "zenMode.restore": false,
+    "zenMode.silentNotifications": false,
+    "zenMode.centerLayout": false,
+    "workbench.colorTheme": "Quiet Light",
+    "editor.semanticTokenColorCustomizations": {
+
+    },
+    "markdown.copyFiles.destination": {
+        "/pages/**/*": "images/${documentBaseName}/"
+      },
+        // When a Markdown preview is scrolled, update the view of the editor.
+  "markdown.preview.scrollEditorWithPreview": false,
+
+  // When a Markdown editor is scrolled, update the view of the preview.
+  "markdown.preview.scrollPreviewWithEditor": false,
+  "files.associations": {
+    "*.mdx": "markdown"
+}
+  
+}
