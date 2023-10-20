@@ -1,0 +1,137 @@
+## 将Reducer和Context相结合
+*使用Reducer会使Event handles代码保持简洁。随着应用的增长，会遇到一个问题。state状态和dispatch只能在某个组件中使用，其他组件想要读取状态修改它，只能显式传递props。如果中间有几十或数百组件，传递所有状态和函数将会让人崩溃。*
+
+>**解决方案将传递的状态和函数放入Context中。其下的所有子孙组件都可以读取并操作，不会有props drilling问题。**
+
+import {Steps} from 'nextra/components';
+
+<Steps>
+
+### step 1 create the Context
+
+```js
+ const [tasks,dispatch] = useReducer(tasksReducer,initialTasks);
+ ```
+
+要将```tasks、dispatch```传递到树中，需要创建两个context:
+```TasksContext、TasksDispatchContext ``` 
+  
+  ### step 2 将state和dispatch放置于Context Provider中
+
+  ```jsx
+  import {TasksContext，TasksDispatchContext } from './TaskContext.js';
+  export function TaskApp(){
+    const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+    //...
+    return(
+        <TasksContext.Provider value={tasks}>
+            <TasksDispatchContext.Provider value={dispatch}>
+                //...
+            </TasksDispatchContext.Provider>
+        </TasksContext.Provider>
+    )
+  }
+
+  //...
+  ```
+  ### step 3 在树的任意位置使用Context
+状态仍然“存在于” 顶级TaskApp 组件中，使用 useReducer 进行管理。但是它的 tasks 和 dispatch 现在可以通过context来提供给树中的每个组件。
+
+</Steps>
+
+### 将上述汇总到一个文件中
+import { Tabs} from 'nextra/components'
+
+<Tabs items={['TaskContext.js','App.js']}>
+
+<Tabs.Tab>
+
+```jsx filename="TasksContext.js"
+  import {useReducer, useContext, createContext} from 'react';
+
+  // create context
+   const TasksContext = createContext(null);
+   const TasksDispatchContext = createContext(null);
+
+   //导出tasks和dispatch
+  export function useTasks(){
+    return useContext(TasksContext);
+  }
+
+  export function useTasksDispatch(){
+    return useContext(TasksDispatchContext)
+  }
+
+  export default function TasksProvider({children}){
+    const [tasks, dispatch] =  useReducer(tasksReducer, initial);
+
+    return(
+       <TasksContext.Provider value={tasks}>
+            <TasksDispatchContext.Provider value={dispatch}>
+               {children}
+            </TasksDispatchContext.Provider>
+        </TasksContext.Provider>
+    )
+  }
+
+  function tasksReducer(tasks, action){
+    switch(action.type){
+      case 'add':{
+        return [...tasks,{
+          id:action.id,
+          text:action.text,
+          done: false
+        }]
+      }
+      case 'delete':{
+        return tasks.filter(t=> t.id!==action.id )
+      } 
+      case 'change':{
+        return tasks.map(t=>{
+          if(t.id === action.id) {
+            return action.task;
+          }
+          return t;
+        })
+      }
+      default:{
+        throw Error('Unknown action:'+action.type)
+      }
+    }
+  }
+
+  const initialTasks = [
+  { id: 0, text: 'Philosopher’s Path', done: true },
+  { id: 1, text: 'Visit the temple', done: false },
+  { id: 2, text: 'Drink matcha', done: false }
+];
+```
+
+</Tabs.Tab>
+<Tabs.Tab>
+
+```jsx filename="App.js"
+import AddTask from './AddTask.js';
+import TaskList from './TaskList.js';
+import { TasksProvider } from './TasksContext.js';
+export default function TaskApp() {
+  return (
+    <TasksProvider>
+      <h1>Day off in Kyoto</h1>
+      <AddTask />
+      <TaskList />
+    </TasksProvider>
+  );
+}
+```
+
+</Tabs.Tab>
+
+</Tabs>
+
+
+
+
+在 AddTask组件中```const tasks = useTasks()```使用tasks
+
+这样可以保持组件干净整洁，专注于它们显示的内容，而不是它们获取数据的位置。
