@@ -2,5 +2,6 @@
     "index":{
         "title":"React介绍"
     },
-    "manage-state":"管理状态"
+    "manage-state":"管理状态",
+    "synchronize-external":"同步外部系统"
 }

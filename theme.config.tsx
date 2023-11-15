@@ -2,7 +2,7 @@ import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 
 const config: DocsThemeConfig = {
-  logo: <span>Documentation</span>,
+  logo: <span>My Website</span>,
   project: {
     link: 'https://github.com/zelingo/documentation',
   },
