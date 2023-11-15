@@ -1,0 +1,203 @@
+## useRef Hook
+
+*当前希望组件"记住"某些信息，但又不希望该信息触发新的渲染时，可以使用ref*
+
+### 如何在组件添加Ref
+
+```jsx
+    import {useRef} from 'react';
+
+    //...组件内部
+    const ref = useRef(0);
+```
+useRef Hook返回一个对象```{current: 0}```,可以通过```ref.current```访问当前值。可以读取和写入它。组件在重新渲染时会保留它的引用，但它的改变不会触发重新渲染。
+
+Example：制作秒表StopWatch
+
+```jsx
+export default function StopWatch(){
+
+  const [startTime, setStartTime] = useState(null);
+  const [stopTime, setStopTime] = useState(null);
+
+  const intervalId = useRef(null);
+  let seconds = 0;
+
+  if(stopTime && startTime){
+    seconds = (stopTime - startTime)/1000
+  }
+
+  function start(){  
+    setStartTime(Date.now());
+    setStopTime(Date.now())
+    clearInterval(intervalId.current);
+    intervalId.current = setInterval(()=>{
+      setStopTime(Date.now())
+    },100)
+  }
+
+  function stop(){
+    clearInterval(intervalId.current)
+  }
+
+  return (
+    <div>
+      <span>计时开始：</span>
+      <span>{seconds.toFixed(2)}</span>
+      <p>
+      <button onClick={start}>start</button>
+      <button onClick={stop}>stop</button>
+      </p>
+      
+    </div>
+  )
+}
+```
+
+*useState:* 当某个信息是用来render时，使用状态state。
+
+*useRef:* 如果仅是由事件处理程序需要并且更改它，不需要render,使用ref。
+如果在render中读取，ref的改变不会引发重新渲染，页面DOM不会发生变化，所以在渲染过程中不要读取或写入ref.current.
+
+状态就像每个渲染的快照一样，不会同步更新。但是，当更改 ref 的当前值时，它会立即更改；
+
+同状态一样，ref在组件重新渲染后会保留信息。
+
+### 何时使用Ref
+ #### 1. 存储超时ID
+
+异步操作（如超时）无法读取最新状态，因为状态类似快照，这时就可以使用ref.
+
+ #### 2. 存储和操作DOM
+ ##### 2.1 使用ref访问DOM节点
+
+```js
+    const divDom = useRef(null);
+
+    //dom...
+    <div ref={divDom}></div>
+```
+首先在组件顶部声明ref，然后将```divDom```作为ref属性传递过要获取DOM节点的JSX标签。在React渲染DOM后，会将对这个节点的引用放入```divDom.current```中。可以在Event Handles中访问此节点，并可以使用浏览器的API。
+
+> 常用场景：
+
+(1) 聚焦本文输入
+
+(2) 滚动到节点
+```js
+node.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center'
+    })
+```
+  
+  (3)测量其大小和位置。
+
+ ##### 2.2 使用ref回调管理ref列表
+
+*如果需要对多个标签使用ref，但数量不确定（由map生成的列表），使用ref回调。*
+```js
+<ul>
+  {items.map((item) => {
+    // Doesn't work!
+    const ref = useRef(null);
+    return <li ref={ref} />;
+  })}
+</ul>
+```
+Hook只能在组件顶部使用，不能在循环、条件中调用useRef（）;
+
+**解决方法：是将函数传递给ref属性，称为ref回调；
+当ref属性为函数时，React使用 DOM 节点调用你的 ref 回调，在需要清除 ref 时使用 null 调用 ref 回调。这就可以维护自己的数组或 Map，并通过其索引或 ID 访问任何 ref。**
+
+```jsx 
+
+function getMap(){
+  if(!itemsRef.current){
+    itemsRef.current = new Map();
+  }
+  return itemsRef.current;
+}
+
+// ...
+<ul>
+          {catList.map(cat => (
+            <li
+              key={cat.id}
+              ref={(node) => {
+                const map = getMap();
+                if (node) {
+                   // Add to the Map
+                  map.set(cat.id, node);
+                } else {
+                   // Remove from the Map
+                  map.delete(cat.id);
+                }
+              }}
+            >
+              <img
+                src={cat.imageUrl}
+                alt={'Cat #' + cat.id}
+              />
+            </li>
+          ))}
+        </ul>
+```
+
+ ##### 2.3 访问另一组件的DOM节点
+
+ ```js
+ import { forwardRef, useRef } from 'react';
+
+ const MyInput = forwardRef((props, ref) => {
+  return <input {...props} ref={ref} />;
+});
+
+export default function Form() {
+  const inputRef = useRef(null);
+
+  function handleClick() {
+    inputRef.current.focus();
+  }
+
+  return (
+    <>
+      <MyInput ref={inputRef} />
+      <button onClick={handleClick}>
+        Focus the input
+      </button>
+    </>
+  );
+}
+
+ ```
+ 在设计系统中，低级组件（如按钮、输入等）将其引用转发到其 DOM 节点是一种常见模式。另一方面，表单、列表或页面部分等高级组件通常不会公开其 DOM 节点，以避免对 DOM 结构的意外依赖。
+
+  MyInput 公开了原始的 DOM 输入元素。这允许父组件在其上调用 focus() 。但是，这也允许父组件执行其他操作，例如，更改其 CSS 样式。在不常见的情况下，可能希望限制公开的功能。可以使用 useImperativeHandle 来做到这一点：
+
+  ```js
+  const MyInput = forwardRef((props, ref) => {
+  const realInputRef = useRef(null);
+  useImperativeHandle(ref, () => ({
+    // Only expose focus and nothing else
+    focus() {
+      realInputRef.current.focus();
+    },
+  }));
+  return <input {...props} ref={realInputRef} />;
+});
+  ```
+  ##### 2.4 强制更新状态
+  在使用ref访问由状态state控制的DOM节点时，状态更改，DOM节点不会立即更新，ref可能访问不到对应的节点。（业务场景，添加一个新的待办事项，并将屏幕向下滚动到列表的最后一个子项；由于某种原因，总是滚动到最后一个添加事项的前面）
+  
+  解决方法：可以强制React同步更新DOM, 从 react-dom 导入 flushSync 并将状态更新包装到 flushSync 调用中：
+
+  ```js
+   flushSync(() => {
+      setText('');
+      setTodos([ ...todos, newTodo]);      
+    });
+  ```
+
+ #### 3. 存储计算JSX不需要的其他对象

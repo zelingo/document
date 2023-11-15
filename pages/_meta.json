@@ -1,19 +1,20 @@
 {
   "index": {
     "title":"Home",
-    "type":"page"
+    "type":"page",
+    "theme":{
+      "layout":"full"
+    }
   },
   "react":{
     "title":"React",
     "type":"page",
     "theme":{
-      "breadcrumb": "false",
-      "layout": "full",
-      "typesetting": "article"
+      "breadcrumb": false
     }
   },
   "about":{
     "title":"About",
     "type":"page"
   }
-}
+}  
